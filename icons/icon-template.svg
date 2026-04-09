@@ -1,0 +1,14 @@
+<svg width="128" height="128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Фон -->
+  <rect width="128" height="128" rx="24" fill="#667eea"/>
+  
+  <!-- Книга -->
+  <rect x="32" y="36" width="64" height="56" rx="4" fill="white"/>
+  <line x1="64" y1="36" x2="64" y2="92" stroke="#667eea" stroke-width="2"/>
+  
+  <!-- Символ ударения (á) -->
+  <text x="64" y="75" font-family="Arial, sans-serif" font-size="32" font-weight="bold" text-anchor="middle" fill="#667eea">á</text>
+  
+  <!-- Подчёркивание -->
+  <line x1="48" y1="80" x2="80" y2="80" stroke="#ff5722" stroke-width="3" stroke-linecap="round"/>
+</svg>
