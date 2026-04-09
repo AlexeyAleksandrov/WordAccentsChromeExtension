@@ -92,21 +92,33 @@ function showAccentSelectorModal(word) {
   saveBtn.textContent = 'Сохранить';
   saveBtn.addEventListener('click', () => {
     if (selectedPositions.length > 0) {
+      // МГНОВЕННОЕ ПРИМЕНЕНИЕ: обновляем локальный словарь сразу
+      const wordLower = word.toLowerCase();
+      accentDictionary[wordLower] = selectedPositions;
+      console.log('[Accent Extension] ✓ Слово добавлено локально:', wordLower, selectedPositions);
+      
+      // Закрываем модальное окно
+      modal.remove();
+      
+      // МГНОВЕННО применяем ударения на текущей странице
+      console.log('[Accent Extension] Применяем ударения для нового слова...');
+      applyAccents();
+      
+      // Параллельно сохраняем в storage для других вкладок
       chrome.runtime.sendMessage({
         action: 'saveWord',
         word: word,
         accentPositions: selectedPositions
       }, (response) => {
         if (response && response.success) {
-          modal.remove();
-          loadDictionary(); // Перезагружаем словарь
+          console.log('[Accent Extension] ✓ Слово сохранено в storage');
         }
       });
     } else {
       alert('Пожалуйста, выберите хотя бы одну букву для ударения');
     }
   });
-  
+
   const cancelBtn = document.createElement('button');
   cancelBtn.className = 'accent-cancel-btn';
   cancelBtn.textContent = 'Отмена';
@@ -136,53 +148,11 @@ function applyAccents() {
     return;
   }
   
-  console.log('[Accent Extension] Применяем ударения. Словарь:', accentDictionary);
-  console.log('[Accent Extension] Ищем слова:', Object.keys(accentDictionary));
-  
-  // ТЕСТ: проверяем regex с разными регистрами
-  console.log('[Accent Extension] === ТЕСТ REGEX ===');
-  for (const word of Object.keys(accentDictionary)) {
-    const pattern = `(?<![а-яёА-ЯЁa-zA-Z])${escapeRegex(word)}(?![а-яёА-ЯЁa-zA-Z])`;
-    const regex = new RegExp(pattern, 'gi');
-    
-    // Тестовые строки
-    const testStrings = [
-      word,                              // слово
-      word.charAt(0).toUpperCase() + word.slice(1), // Слово
-      word.toUpperCase(),                // СЛОВО
-      `Это ${word} тест`,                // с контекстом
-      `${word.charAt(0).toUpperCase() + word.slice(1)} Иванович` // начало строки
-    ];
-    
-    testStrings.forEach(testStr => {
-      const match = testStr.match(regex);
-      console.log(`[Accent Extension] Regex (новый) находит "${testStr}": ${match ? '✓' : '✗'}`);
-    });
-  }
-  console.log('[Accent Extension] === КОНЕЦ ТЕСТА ===');
-  
-  // ДИАГНОСТИКА: проверяем, есть ли искомые слова на странице вообще
-  const pageText = document.body.innerText;
-  const pageTextLower = pageText.toLowerCase();
-  
-  for (const word of Object.keys(accentDictionary)) {
-    const found = pageTextLower.includes(word);
-    console.log(`[Accent Extension] Слово "${word}" ${found ? '✓ ЕСТЬ' : '✗ НЕТ'} на странице (innerText)`);
-    if (found) {
-      // Найдём контекст
-      const index = pageTextLower.indexOf(word);
-      const context = pageText.substring(Math.max(0, index - 30), Math.min(pageText.length, index + word.length + 30));
-      console.log(`[Accent Extension] Контекст: "...${context}..."`);
-      
-      // Проверяем, есть ли это слово как отдельный текстовый узел
-      console.log(`[Accent Extension] ⚠️ ВНИМАНИЕ: Слово может быть разбито на несколько текстовых узлов!`);
-    }
-  }
+  console.log('[Accent Extension] Применяем ударения. Слов в словаре:', Object.keys(accentDictionary).length);
   
   let processedNodes = 0;
   let checkedTextNodes = 0;
   let totalMatches = 0;
-  let sampleTexts = []; // Собираем примеры текста для отладки
   
   // Рекурсивная функция обработки текстовых узлов
   function processNode(node) {
@@ -192,31 +162,6 @@ function applyAccents() {
       
       checkedTextNodes++;
       
-      // Сохраняем первые 20 примеров текста для отладки
-      if (sampleTexts.length < 20 && text.trim().length > 5) {
-        sampleTexts.push(text.trim().substring(0, 80));
-      }
-      
-      // СПЕЦИАЛЬНАЯ ДИАГНОСТИКА: проверяем, содержит ли этот узел искомые слова
-      const textLower = text.toLowerCase();
-      for (const word of Object.keys(accentDictionary)) {
-        if (textLower.includes(word)) {
-          console.log(`[Accent Extension] 🔍 Узел содержит "${word}": "${text.trim()}"`);
-          console.log(`[Accent Extension] 🔍 Длина текста: ${text.length}, Есть пробелы в начале/конце:`, text !== text.trim());
-          
-          // ТЕСТ: проверяем НОВЫЙ regex прямо на этом тексте
-          const pattern = `(?<![а-яёА-ЯЁa-zA-Z])${escapeRegex(word)}(?![а-яёА-ЯЁa-zA-Z])`;
-          const regex = new RegExp(pattern, 'gi');
-          const match = text.match(regex);
-          console.log(`[Accent Extension] 🧪 Regex НОВЫЙ "${pattern}" на этом тексте:`, match ? `✓ НАХОДИТ: ${match}` : '✗ НЕ НАХОДИТ');
-          
-          // Дополнительный тест без границ слова
-          const regexNoBoundary = new RegExp(escapeRegex(word), 'gi');
-          const matchNoBoundary = text.match(regexNoBoundary);
-          console.log(`[Accent Extension] 🧪 Regex без границ "${escapeRegex(word)}":`, matchNoBoundary ? `✓ НАХОДИТ: ${matchNoBoundary}` : '✗ НЕ НАХОДИТ');
-        }
-      }
-
       // Собираем ВСЕ совпадения из всех слов словаря
       const allMatches = [];
       
@@ -226,11 +171,6 @@ function applyAccents() {
         // (?![а-яёА-ЯЁa-zA-Z]) - после слова нет букв
         const pattern = `(?<![а-яёА-ЯЁa-zA-Z])${escapeRegex(word)}(?![а-яёА-ЯЁa-zA-Z])`;
         const regex = new RegExp(pattern, 'gi');
-        
-        // Отладка: логируем поиск для первых нескольких узлов
-        if (checkedTextNodes <= 3 && text.length > 0) {
-          console.log(`[Accent Extension] Ищем слово "${word}" (паттерн: ${pattern}) в тексте:`, text.substring(0, 100));
-        }
         
         let match;
         
@@ -242,14 +182,11 @@ function applyAccents() {
             positions: positions
           });
           totalMatches++;
-          console.log('[Accent Extension] ✓ Найдено совпадение:', match[0], 'в позиции', match.index);
         }
       }
       
       // Если нет совпадений, выходим
       if (allMatches.length === 0) return;
-      
-      console.log('[Accent Extension] Найдено совпадений в узле:', allMatches.length, 'Текст:', text.substring(0, 100));
       
       // Сортируем совпадения по позиции в тексте
       allMatches.sort((a, b) => a.index - b.index);
@@ -305,10 +242,9 @@ function applyAccents() {
   
   processNode(document.body);
   
-  console.log('[Accent Extension] Проверено текстовых узлов:', checkedTextNodes);
-  console.log('[Accent Extension] Примеры текста из узлов (первые 20):', sampleTexts);
-  console.log('[Accent Extension] Найдено всего совпадений:', totalMatches);
-  console.log('[Accent Extension] Обработано текстовых узлов с заменами:', processedNodes);
+  if (totalMatches > 0) {
+    console.log('[Accent Extension] ✓ Применено ударений:', totalMatches, '| Обработано узлов:', processedNodes);
+  }
 }
 
 // Создаём слово с ударением
