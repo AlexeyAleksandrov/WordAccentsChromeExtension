@@ -1,0 +1,43 @@
+# IDE - IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# IDE - VS Code
+.vscode/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Временные файлы
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*~
+
+# Node modules (если будете использовать npm)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build files
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+
+# Личные данные и тестовые HTML с реальными данными
+pulse.mirea.ru.html
