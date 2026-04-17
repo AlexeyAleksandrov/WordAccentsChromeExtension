@@ -107,41 +107,6 @@
 /* Стили для слов с ударением на странице */
 .accent-word {
   display: inline;
-}
-
-.accent-letter {
-  text-decoration: underline;
-  text-decoration-color: currentColor;
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 2px;
-}
-
-/* Если родительский элемент уже подчёркнут, делаем букву жирной */
-u .accent-letter,
-[style*="text-decoration: underline"] .accent-letter,
-[style*="text-decoration:underline"] .accent-letter {
-  text-decoration: none;
-  font-weight: bold;
-}
-
-/* Если родительский элемент уже жирный, делаем букву курсивом */
-b .accent-letter,
-strong .accent-letter,
-[style*="font-weight: bold"] .accent-letter,
-[style*="font-weight:bold"] .accent-letter,
-[style*="font-weight: 700"] .accent-letter,
-[style*="font-weight:700"] .accent-letter {
-  font-weight: inherit;
-  font-style: italic;
-  text-decoration: none;
-}
-
-/* Если родительский элемент уже жирный И подчёркнутый */
-u b .accent-letter,
-u strong .accent-letter,
-b u .accent-letter,
-strong u .accent-letter {
-  font-weight: inherit;
-  font-style: italic;
-  text-decoration: none;
+  /* Ударение теперь ставится с помощью combining acute accent (́ U+0301) */
+  /* поэтому дополнительные стили не нужны */
 }

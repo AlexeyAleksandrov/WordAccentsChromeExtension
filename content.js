@@ -253,17 +253,17 @@ function createAccentedWord(word, positions) {
   span.className = 'accent-word';
   
   const letters = word.split('');
+  let result = '';
+  
   letters.forEach((letter, index) => {
+    result += letter;
+    // Если это ударная буква, добавляем combining acute accent после неё
     if (positions.includes(index)) {
-      const accentLetter = document.createElement('span');
-      accentLetter.className = 'accent-letter';
-      accentLetter.textContent = letter;
-      span.appendChild(accentLetter);
-    } else {
-      span.appendChild(document.createTextNode(letter));
+      result += '\u0301'; // Combining acute accent
     }
   });
   
+  span.textContent = result;
   return span;
 }
 
