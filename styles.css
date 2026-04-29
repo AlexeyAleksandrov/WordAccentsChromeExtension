@@ -71,7 +71,8 @@
 }
 
 .accent-save-btn,
-.accent-cancel-btn {
+.accent-cancel-btn,
+.accent-delete-btn {
   padding: 8px 18px;
   border: 1px solid transparent;
   border-radius: 2px;
@@ -102,6 +103,18 @@
   background-color: #fafafa;
   border-color: #595959;
   color: #262626;
+}
+
+.accent-delete-btn {
+  background-color: #ffffff;
+  color: #ff4d4f;
+  border-color: #ff4d4f;
+}
+
+.accent-delete-btn:hover {
+  background-color: #ff4d4f;
+  color: #ffffff;
+  border-color: #ff4d4f;
 }
 
 /* Стили для слов с ударением на странице */

@@ -1,6 +1,38 @@
 // Словарь ударений (загружается из storage)
 let accentDictionary = {};
 
+// Флаг активности выделения текста пользователем
+let isUserSelecting = false;
+let selectionTimeout = null;
+
+// Отслеживаем изменения выделения
+document.addEventListener('selectionchange', () => {
+  const selection = window.getSelection();
+  
+  if (selection && selection.toString().trim().length > 0) {
+    // Пользователь выделяет текст
+    isUserSelecting = true;
+    
+    // Очищаем предыдущий таймаут
+    if (selectionTimeout) {
+      clearTimeout(selectionTimeout);
+    }
+    
+    // Через 2 секунды после последнего изменения выделения разрешаем обновления
+    selectionTimeout = setTimeout(() => {
+      isUserSelecting = false;
+    }, 2000);
+  } else {
+    // Выделение снято, но даём небольшую задержку на случай двойного клика
+    if (selectionTimeout) {
+      clearTimeout(selectionTimeout);
+    }
+    selectionTimeout = setTimeout(() => {
+      isUserSelecting = false;
+    }, 300);
+  }
+});
+
 // Загружаем словарь при загрузке страницы
 loadDictionary();
 
@@ -41,6 +73,11 @@ function showAccentSelectorModal(word) {
     existingModal.remove();
   }
   
+  // Проверяем, есть ли слово уже в словаре
+  const wordLower = word.toLowerCase();
+  const existingAccents = accentDictionary[wordLower] || [];
+  const isEditing = existingAccents.length > 0;
+  
   // Создаём модальное окно
   const modal = document.createElement('div');
   modal.id = 'accent-selector-modal';
@@ -50,21 +87,38 @@ function showAccentSelectorModal(word) {
   modalContent.className = 'accent-modal-content';
   
   const title = document.createElement('h3');
-  title.textContent = 'Выберите букву(ы) для ударения:';
+  title.textContent = isEditing 
+    ? 'Редактирование ударения:' 
+    : 'Выберите букву(ы) для ударения:';
   modalContent.appendChild(title);
+  
+  // Если редактируем, показываем подсказку
+  if (isEditing) {
+    const hint = document.createElement('p');
+    hint.style.margin = '0 0 12px 0';
+    hint.style.fontSize = '13px';
+    hint.style.color = '#8c8c8c';
+    hint.textContent = 'Текущие ударения выделены. Нажмите для изменения.';
+    modalContent.appendChild(hint);
+  }
   
   const wordContainer = document.createElement('div');
   wordContainer.className = 'accent-word-container';
   
   // Создаём кнопки для каждой буквы
   const letters = word.split('');
-  const selectedPositions = [];
+  const selectedPositions = [...existingAccents]; // Копируем существующие ударения
   
   letters.forEach((letter, index) => {
     const letterBtn = document.createElement('button');
     letterBtn.className = 'accent-letter-btn';
     letterBtn.textContent = letter;
     letterBtn.dataset.index = index;
+    
+    // Если буква уже имеет ударение, предвыделяем её
+    if (existingAccents.includes(index)) {
+      letterBtn.classList.add('selected');
+    }
     
     letterBtn.addEventListener('click', () => {
       letterBtn.classList.toggle('selected');
@@ -128,6 +182,35 @@ function showAccentSelectorModal(word) {
   
   buttonContainer.appendChild(saveBtn);
   buttonContainer.appendChild(cancelBtn);
+  
+  // Если это редактирование существующего слова, добавляем кнопку удаления
+  if (isEditing) {
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'accent-delete-btn';
+    deleteBtn.textContent = 'Удалить из словаря';
+    deleteBtn.style.marginRight = 'auto'; // Выравниваем влево
+    deleteBtn.addEventListener('click', () => {
+      if (confirm(`Удалить слово "${word}" из словаря?`)) {
+        // Удаляем из локального словаря
+        const wordLower = word.toLowerCase();
+        delete accentDictionary[wordLower];
+        
+        // Закрываем модальное окно
+        modal.remove();
+        
+        // Обновляем страницу (убираем ударения)
+        applyAccents();
+        
+        // Удаляем из storage
+        chrome.runtime.sendMessage({
+          action: 'deleteWord',
+          word: word
+        });
+      }
+    });
+    buttonContainer.insertBefore(deleteBtn, buttonContainer.firstChild);
+  }
+  
   modalContent.appendChild(buttonContainer);
   
   modal.appendChild(modalContent);
@@ -141,10 +224,72 @@ function showAccentSelectorModal(word) {
   });
 }
 
+// Функция удаления всех ударений со страницы
+function removeAllAccents() {
+  console.log('[Accent Extension] Удаляем все существующие ударения...');
+  
+  // Находим все элементы с классом accent-word
+  const accentedElements = document.querySelectorAll('.accent-word');
+  
+  if (accentedElements.length === 0) {
+    console.log('[Accent Extension] Нет элементов для удаления');
+    return;
+  }
+  
+  // Собираем уникальных родителей для нормализации
+  const parents = new Set();
+  
+  accentedElements.forEach(element => {
+    // Получаем текст без combining accents
+    const cleanText = element.textContent.replace(/\u0301/g, '');
+    
+    // Создаём текстовый узел с чистым текстом
+    const textNode = document.createTextNode(cleanText);
+    
+    // Сохраняем родителя для последующей нормализации
+    const parent = element.parentNode;
+    if (parent) {
+      parents.add(parent);
+      // Заменяем span на текстовый узел
+      parent.replaceChild(textNode, element);
+    }
+  });
+  
+  // Нормализуем всех родителей (объединяем соседние текстовые узлы)
+  parents.forEach(parent => {
+    if (parent && parent.normalize) {
+      parent.normalize();
+    }
+  });
+  
+  console.log('[Accent Extension] Удалено элементов:', accentedElements.length);
+}
+
 // Функция применения ударений на странице
 function applyAccents() {
+  // Блокируем обновления, если пользователь активно выделяет текст
+  if (isUserSelecting) {
+    console.log('[Accent Extension] Пользователь работает с выделением, откладываем обновление');
+    return;
+  }
+  
+  // Временно отключаем observer, чтобы он не реагировал на наши изменения
+  if (window.accentObserver) {
+    window.accentObserver.disconnect();
+  }
+  
+  removeAllAccents();
+  
   if (Object.keys(accentDictionary).length === 0) {
     console.log('[Accent Extension] Словарь пуст, пропускаем обработку');
+    // Восстанавливаем observer даже если словарь пуст
+    if (window.accentObserver) {
+      window.accentObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
+    }
     return;
   }
   
@@ -245,6 +390,15 @@ function applyAccents() {
   if (totalMatches > 0) {
     console.log('[Accent Extension] ✓ Применено ударений:', totalMatches, '| Обработано узлов:', processedNodes);
   }
+  
+  // Восстанавливаем observer
+  if (window.accentObserver) {
+    window.accentObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+  }
 }
 
 // Создаём слово с ударением
@@ -275,7 +429,13 @@ function escapeRegex(string) {
 // Наблюдаем за изменениями DOM для динамического контента
 let applyAccentsTimeout = null;
 
-const observer = new MutationObserver((mutations) => {
+window.accentObserver = new MutationObserver((mutations) => {
+  // Блокируем обновления, если пользователь работает с выделением
+  if (isUserSelecting) {
+    console.log('[Accent Extension] Пользователь работает с выделением, пропускаем обновление DOM');
+    return;
+  }
+  
   // Проверяем, есть ли значимые изменения
   let hasSignificantChanges = false;
   
@@ -319,7 +479,7 @@ const observer = new MutationObserver((mutations) => {
 });
 
 // Запускаем наблюдение
-observer.observe(document.body, {
+window.accentObserver.observe(document.body, {
   childList: true,
   subtree: true,
   characterData: true

@@ -10,7 +10,8 @@ chrome.runtime.onInstalled.addListener(() => {
 // Обработчик клика по контекстному меню
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === 'addToAccentDictionary' && info.selectionText) {
-    const selectedWord = info.selectionText.trim();
+    // Удаляем все combining accents из выделенного текста
+    const selectedWord = info.selectionText.trim().replace(/\u0301/g, '');
     
     // Отправляем сообщение в content script для показа popup
     chrome.tabs.sendMessage(tab.id, {
@@ -49,6 +50,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'getDictionary') {
     chrome.storage.local.get(['accentDictionary'], (result) => {
       sendResponse({ dictionary: result.accentDictionary || {} });
+    });
+    return true;
+  }
+  
+  if (request.action === 'deleteWord') {
+    // Удаляем слово из словаря
+    chrome.storage.local.get(['accentDictionary'], (result) => {
+      const dictionary = result.accentDictionary || {};
+      delete dictionary[request.word.toLowerCase()];
+      
+      chrome.storage.local.set({ accentDictionary: dictionary }, () => {
+        // Уведомляем все вкладки об обновлении словаря
+        chrome.tabs.query({}, (tabs) => {
+          tabs.forEach(tab => {
+            chrome.tabs.sendMessage(tab.id, {
+              action: 'updateDictionary'
+            }).catch(() => {
+              // Игнорируем ошибки для вкладок, которые не поддерживают content script
+            });
+          });
+        });
+      });
     });
     return true;
   }
