@@ -170,6 +170,220 @@
       border-color: #e8e8e8;
       cursor: not-allowed;
     }
+
+    .import-export-section {
+      margin-top: 15px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .export-btn,
+    .import-btn {
+      padding: 10px;
+      border: 1px solid #d9d9d9;
+      border-radius: 2px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+
+    .export-btn {
+      background: #ffffff;
+      color: #595959;
+    }
+
+    .export-btn:hover:not(:disabled) {
+      background: #e6f7ff;
+      border-color: #1890ff;
+      color: #1890ff;
+    }
+
+    .export-btn:disabled {
+      background: #f5f5f5;
+      color: #bfbfbf;
+      border-color: #e8e8e8;
+      cursor: not-allowed;
+    }
+
+    .import-btn {
+      background: #ffffff;
+      color: #595959;
+    }
+
+    .import-btn:hover {
+      background: #e6f7ff;
+      border-color: #1890ff;
+      color: #1890ff;
+    }
+
+    /* Модальное окно импорта */
+    .import-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      min-height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      z-index: 10000;
+      padding: 20px 0;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+
+    .import-modal-content {
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      width: 310px;
+      max-width: 100%;
+      border: 1px solid #d9d9d9;
+      margin: auto;
+    }
+
+    .import-modal-title {
+      margin: 0 0 16px 0;
+      color: #262626;
+      font-size: 15px;
+      font-weight: 600;
+      border-bottom: 1px solid #f0f0f0;
+      padding-bottom: 10px;
+    }
+
+    .import-modal-info {
+      background: #fafafa;
+      border: 1px solid #e8e8e8;
+      border-radius: 2px;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+    }
+
+    .import-info-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+
+    .import-info-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .import-info-label {
+      color: #595959;
+    }
+
+    .import-info-value {
+      font-weight: 600;
+      color: #262626;
+    }
+
+    .import-conflicts {
+      color: #fa8c16;
+    }
+
+    .conflicts-list {
+      background: #fff7e6;
+      border: 1px solid #ffd591;
+      border-radius: 2px;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+      max-height: 100px;
+      overflow-y: auto;
+    }
+
+    .conflicts-list-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #d46b08;
+      margin-bottom: 6px;
+    }
+
+    .conflict-item {
+      font-size: 12px;
+      color: #ad6800;
+      margin-bottom: 3px;
+      padding-left: 12px;
+      position: relative;
+    }
+
+    .conflict-item:before {
+      content: '•';
+      position: absolute;
+      left: 0;
+    }
+
+    .import-modal-description {
+      font-size: 13px;
+      color: #595959;
+      margin-bottom: 12px;
+    }
+
+    .import-modal-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .import-action-btn {
+      padding: 10px 12px;
+      border: 1px solid #d9d9d9;
+      border-radius: 2px;
+      cursor: pointer;
+      background: #ffffff;
+      text-align: left;
+      transition: all 0.15s ease;
+    }
+
+    .import-action-btn:hover {
+      border-color: #1890ff;
+      background: #e6f7ff;
+    }
+
+    .import-action-btn .btn-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #262626;
+      margin-bottom: 3px;
+    }
+
+    .import-action-btn .btn-description {
+      font-size: 11px;
+      color: #8c8c8c;
+      line-height: 1.4;
+    }
+
+    .import-replace-btn:hover {
+      border-color: #ff4d4f;
+      background: #fff1f0;
+    }
+
+    .import-replace-btn:hover .btn-title {
+      color: #cf1322;
+    }
+
+    .import-cancel-btn {
+      padding: 8px;
+      background: #ffffff;
+      color: #595959;
+      border: 1px solid #d9d9d9;
+      border-radius: 2px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .import-cancel-btn:hover {
+      background: #fafafa;
+      border-color: #595959;
+      color: #262626;
+    }
   </style>
 </head>
 <body>
@@ -190,7 +404,53 @@
       <div id="wordList"></div>
     </div>
 
+    <div class="import-export-section">
+      <button class="export-btn" id="exportBtn" disabled>Экспортировать</button>
+      <button class="import-btn" id="importBtn">Импортировать</button>
+      <input type="file" id="importFileInput" accept=".json" style="display: none;">
+    </div>
+
     <button class="clear-all-btn" id="clearAllBtn" disabled>Очистить весь словарь</button>
+  </div>
+
+  <!-- Модальное окно импорта -->
+  <div id="importModal" class="import-modal" style="display: none;">
+    <div class="import-modal-content">
+      <h3 class="import-modal-title">Импорт словаря</h3>
+      
+      <div class="import-modal-info">
+        <div class="import-info-row">
+          <span class="import-info-label">Текущий словарь:</span>
+          <span class="import-info-value" id="currentWordCount">0 слов</span>
+        </div>
+        <div class="import-info-row">
+          <span class="import-info-label">Импортируемый:</span>
+          <span class="import-info-value" id="importedWordCount">0 слов</span>
+        </div>
+        <div class="import-info-row" id="conflictsRow" style="display: none;">
+          <span class="import-info-label">Конфликтов:</span>
+          <span class="import-info-value import-conflicts" id="conflictsCount">0</span>
+        </div>
+      </div>
+
+      <div id="conflictsList" class="conflicts-list" style="display: none;"></div>
+
+      <div class="import-modal-description">
+        Выберите действие:
+      </div>
+
+      <div class="import-modal-buttons">
+        <button class="import-action-btn import-merge-btn" id="importMergeBtn">
+          <div class="btn-title">Добавить к существующим</div>
+          <div class="btn-description">Импортируемые слова будут добавлены, конфликты перезаписаны</div>
+        </button>
+        <button class="import-action-btn import-replace-btn" id="importReplaceBtn">
+          <div class="btn-title">Заменить весь словарь</div>
+          <div class="btn-description">Все текущие слова будут удалены</div>
+        </button>
+        <button class="import-cancel-btn" id="importCancelBtn">Отмена</button>
+      </div>
+    </div>
   </div>
 
   <script src="popup.js"></script>
